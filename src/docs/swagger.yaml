@@ -1,299 +1,331 @@
 openapi: 3.0.0
 info:
-  title: Medication Tracker API
-  description: API backend pour l'application de suivi de médicaments avec authentification Clerk
+  title: Nexus Social Media API
   version: 1.0.0
+  description: API complète pour une application de médias sociaux avec authentification Clerk
   contact:
     name: Support API
-    email: support@medicationtracker.com
+    email: support@nexus.com
 
 servers:
   - url: http://localhost:3000/api
     description: Serveur de développement
-  - url: https://api.medicationtracker.com/api
+  - url: https://votre-domaine.com/api
     description: Serveur de production
 
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-  
+    ClerkAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token d'authentification Clerk
+
   schemas:
-    Medication:
+    User:
       type: object
-      required:
-        - name
-        - dosage
-        - times
-        - startDate
-        - duration
-        - color
       properties:
-        id:
+        _id:
           type: string
           format: uuid
-          description: ID unique du médicament
-        userId:
+        clerk_id:
           type: string
-          description: ID de l'utilisateur (Clerk)
-        name:
+        username:
           type: string
-          description: Nom du médicament
-          example: "Paracétamol"
-        dosage:
+        fullname:
           type: string
-          description: Dosage du médicament
-          example: "500mg"
-        times:
-          type: array
-          items:
-            type: string
-          description: Horaires de prise
-          example: ["09:00", "21:00"]
-        startDate:
+        email:
           type: string
-          format: date
-          description: Date de début du traitement
-          example: "2024-01-15"
-        duration:
+        bio:
           type: string
-          description: Durée du traitement
-          example: "30 days"
-        color:
+        image:
           type: string
-          description: Couleur d'affichage du médicament
-          example: "#4CAF50"
-        reminderEnabled:
-          type: boolean
-          description: Activation des rappels
-          default: true
-        currentSupply:
+        followers:
           type: integer
-          description: Stock actuel
-          default: 0
-        totalSupply:
+        following:
           type: integer
-          description: Stock total
-          default: 0
-        refillAt:
+        posts:
           type: integer
-          description: Seuil d'alerte pour le renouvellement
-          default: 0
-        refillReminder:
-          type: boolean
-          description: Activation des rappels de renouvellement
-          default: false
-        lastRefillDate:
-          type: string
-          format: date
-          description: Date du dernier renouvellement
-          nullable: true
-        createdAt:
+        created_at:
           type: string
           format: date-time
-          description: Date de création
-        updatedAt:
-          type: string
-          format: date-time
-          description: Date de mise à jour
 
-    DoseHistory:
+    Post:
       type: object
-      required:
-        - medicationId
-        - timestamp
-        - taken
       properties:
-        id:
+        _id:
           type: string
           format: uuid
-          description: ID unique de la prise
-        medicationId:
+        user_id:
           type: string
           format: uuid
-          description: ID du médicament
-        userId:
+        image_url:
           type: string
-          description: ID de l'utilisateur
-        timestamp:
+        storage_id:
+          type: string
+        caption:
+          type: string
+        likes:
+          type: integer
+        comments:
+          type: integer
+        created_at:
           type: string
           format: date-time
-          description: Date et heure de la prise
-        taken:
+        author:
+          $ref: '#/components/schemas/User'
+        isLiked:
           type: boolean
-          description: Indique si la dose a été prise
-        createdAt:
-          type: string
-          format: date-time
-          description: Date de création
-        medicationName:
-          type: string
-          description: Nom du médicament (enrichi)
-        medicationDosage:
-          type: string
-          description: Dosage du médicament (enrichi)
-        medicationColor:
-          type: string
-          description: Couleur du médicament (enrichi)
+        isBookmarked:
+          type: boolean
 
-    MedicationStats:
+    Comment:
       type: object
       properties:
-        id:
+        _id:
           type: string
           format: uuid
-          description: ID du médicament
-        name:
+        user_id:
           type: string
-          description: Nom du médicament
-        dosage:
+          format: uuid
+        post_id:
           type: string
-          description: Dosage
-        color:
+          format: uuid
+        content:
           type: string
-          description: Couleur
-        totalDoses:
-          type: integer
-          description: Nombre total de doses programmées
-        takenDoses:
-          type: integer
-          description: Nombre de doses prises
-        missedDoses:
-          type: integer
-          description: Nombre de doses manquées
-        adherenceRate:
-          type: number
-          format: float
-          description: Taux d'observance en pourcentage
+        created_at:
+          type: string
+          format: date-time
+        user:
+          type: object
+          properties:
+            fullname:
+              type: string
+            image:
+              type: string
+
+    Notification:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: uuid
+        receiver_id:
+          type: string
+          format: uuid
+        sender_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [like, comment, follow]
+        post_id:
+          type: string
+          format: uuid
+        comment_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        sender:
+          type: object
+          properties:
+            _id:
+              type: string
+              format: uuid
+            username:
+              type: string
+            image:
+              type: string
+        post:
+          type: object
+          properties:
+            _id:
+              type: string
+              format: uuid
+            imageUrl:
+              type: string
 
     Error:
       type: object
       properties:
         error:
           type: string
-          description: Message d'erreur
-          example: "Failed to fetch medications"
+        message:
+          type: string
 
-    HealthResponse:
+    Success:
       type: object
       properties:
-        status:
+        message:
           type: string
-          example: "OK"
-        timestamp:
-          type: string
-          format: date-time
-        user:
-          type: string
-          description: ID de l'utilisateur authentifié
-
-  parameters:
-    MedicationId:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: string
-        format: uuid
-      description: ID du médicament
-    
-    MedicationIdQuery:
-      name: medicationId
-      in: query
-      required: false
-      schema:
-        type: string
-        format: uuid
-      description: Filtrer par ID de médicament
-
-    StartDate:
-      name: startDate
-      in: query
-      required: false
-      schema:
-        type: string
-        format: date
-      description: Date de début pour le filtre
-
-    EndDate:
-      name: endDate
-      in: query
-      required: false
-      schema:
-        type: string
-        format: date
-      description: Date de fin pour le filtre
-
-    Days:
-      name: days
-      in: query
-      required: false
-      schema:
-        type: integer
-        default: 30
-      description: Nombre de jours pour les statistiques
-
-security:
-  - BearerAuth: []
 
 paths:
-  # === HEALTH CHECK ===
-  /health:
-    get:
-      summary: Vérification de l'état de l'API
-      description: Retourne l'état de l'API et l'utilisateur authentifié
+  # =========================================
+  # Routes Webhooks (sans authentification)
+  # =========================================
+  /webhooks/clerk:
+    post:
+      summary: Webhook Clerk pour la création d'utilisateurs
+      description: Endpoint webhook pour créer des utilisateurs lors de l'inscription via Clerk
       tags:
-        - Health
+        - Webhooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                email_addresses:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      email_address:
+                        type: string
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                image_url:
+                  type: string
+                username:
+                  type: string
       responses:
-        '200':
-          description: API opérationnelle
+        '201':
+          description: Utilisateur créé avec succès
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthResponse'
-        '401':
-          description: Non authentifié
+                $ref: '#/components/schemas/User'
+        '200':
+          description: Utilisateur déjà existant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '500':
+          description: Erreur interne du serveur
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  # === MÉDICAMENTS ===
-  /medications:
+  # =========================================
+  # Routes Utilisateurs
+  # =========================================
+  /users/profile/{id}:
     get:
-      summary: Récupérer tous les médicaments de l'utilisateur
-      description: Retourne la liste de tous les médicaments de l'utilisateur authentifié
+      summary: Obtenir le profil d'un utilisateur
+      description: Récupère les informations du profil utilisateur par ID
       tags:
-        - Medications
+        - Users
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
-          description: Liste des médicaments récupérée avec succès
+          description: Profil utilisateur récupéré avec succès
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Medication'
-        '401':
-          description: Non authentifié
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Utilisateur non trouvé
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '500':
-          description: Erreur serveur
+          description: Erreur interne du serveur
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
 
-    post:
-      summary: Créer un nouveau médicament
-      description: Ajoute un nouveau médicament pour l'utilisateur authentifié
+  /users/profile:
+    put:
+      summary: Mettre à jour le profil utilisateur
+      description: Met à jour les informations du profil de l'utilisateur connecté
       tags:
-        - Medications
+        - Users
+      security:
+        - ClerkAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullname:
+                  type: string
+                bio:
+                  type: string
+      responses:
+        '200':
+          description: Profil mis à jour avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/is-following/{followingId}:
+    get:
+      summary: Vérifier si on suit un utilisateur
+      description: Vérifie si l'utilisateur connecté suit un autre utilisateur
+      tags:
+        - Users
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: followingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Statut de suivi récupéré
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isFollowing:
+                    type: boolean
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/toggle-follow:
+    post:
+      summary: Suivre/Ne plus suivre un utilisateur
+      description: Permet de suivre ou de ne plus suivre un utilisateur
+      tags:
+        - Users
+      security:
+        - ClerkAuth: []
       requestBody:
         required: true
         content:
@@ -301,336 +333,411 @@ paths:
             schema:
               type: object
               required:
-                - name
-                - dosage
-                - times
-                - startDate
-                - duration
-                - color
+                - followingId
               properties:
-                name:
+                followingId:
                   type: string
-                dosage:
-                  type: string
-                times:
-                  type: array
-                  items:
-                    type: string
-                startDate:
-                  type: string
-                  format: date
-                duration:
-                  type: string
-                color:
-                  type: string
-                reminderEnabled:
-                  type: boolean
-                currentSupply:
-                  type: integer
-                totalSupply:
-                  type: integer
-                refillAt:
-                  type: integer
-                refillReminder:
-                  type: boolean
-                lastRefillDate:
-                  type: string
-                  format: date
-                  nullable: true
+                  format: uuid
       responses:
-        '201':
-          description: Médicament créé avec succès
+        '200':
+          description: Statut de suivi modifié
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Medication'
+                type: object
+                properties:
+                  followed:
+                    type: boolean
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # =========================================
+  # Routes Posts
+  # =========================================
+  /posts:
+    post:
+      summary: Créer un nouveau post
+      description: Crée un nouveau post avec texte et/ou image
+      tags:
+        - Posts
+      security:
+        - ClerkAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                caption:
+                  type: string
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Post créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
         '400':
           description: Données invalides
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '401':
-          description: Non authentifié
         '500':
-          description: Erreur serveur
-
-  /medications/{id}:
-    put:
-      summary: Mettre à jour un médicament
-      description: Met à jour les informations d'un médicament existant
-      tags:
-        - Medications
-      parameters:
-        - $ref: '#/components/parameters/MedicationId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Medication'
-      responses:
-        '200':
-          description: Médicament mis à jour avec succès
+          description: Erreur interne du serveur
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Medication'
-        '404':
-          description: Médicament non trouvé
-        '401':
-          description: Non authentifié
-        '500':
-          description: Erreur serveur
+                $ref: '#/components/schemas/Error'
 
-    delete:
-      summary: Supprimer un médicament
-      description: Supprime un médicament et son historique associé
-      tags:
-        - Medications
-      parameters:
-        - $ref: '#/components/parameters/MedicationId'
-      responses:
-        '204':
-          description: Médicament supprimé avec succès
-        '404':
-          description: Médicament non trouvé
-        '401':
-          description: Non authentifié
-        '500':
-          description: Erreur serveur
-
-  /medications/{id}/supply:
-    patch:
-      summary: Mettre à jour le stock d'un médicament
-      description: Met à jour le stock actuel et la date de dernier renouvellement
-      tags:
-        - Medications
-      parameters:
-        - $ref: '#/components/parameters/MedicationId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - currentSupply
-              properties:
-                currentSupply:
-                  type: integer
-                lastRefillDate:
-                  type: string
-                  format: date
-      responses:
-        '200':
-          description: Stock mis à jour avec succès
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Medication'
-        '404':
-          description: Médicament non trouvé
-        '401':
-          description: Non authentifié
-        '500':
-          description: Erreur serveur
-
-  # === HISTORIQUE DES PRISES ===
-  /dose-history:
+  /posts/feed:
     get:
-      summary: Récupérer l'historique des prises
-      description: Retourne l'historique des prises avec possibilité de filtrage
+      summary: Obtenir le flux de posts
+      description: Récupère tous les posts pour le flux principal
       tags:
-        - Dose History
-      parameters:
-        - $ref: '#/components/parameters/MedicationIdQuery'
-        - $ref: '#/components/parameters/StartDate'
-        - $ref: '#/components/parameters/EndDate'
+        - Posts
+      security:
+        - ClerkAuth: []
       responses:
         '200':
-          description: Historique récupéré avec succès
+          description: Flux récupéré avec succès
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/DoseHistory'
-        '401':
-          description: Non authentifié
+                  $ref: '#/components/schemas/Post'
         '500':
-          description: Erreur serveur
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /dose-history/today:
+  /posts/user/{userId}:
     get:
-      summary: Récupérer les prises du jour
-      description: Retourne les prises enregistrées pour la date actuelle
+      summary: Obtenir les posts d'un utilisateur
+      description: Récupère tous les posts d'un utilisateur spécifique
       tags:
-        - Dose History
+        - Posts
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: false
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
-          description: Prises du jour récupérées avec succès
+          description: Posts récupérés avec succès
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/DoseHistory'
-        '401':
-          description: Non authentifié
+                  $ref: '#/components/schemas/Post'
         '500':
-          description: Erreur serveur
-
-    post:
-      summary: Enregistrer une prise de médicament
-      description: Enregistre une prise (prise ou manquée) et met à jour le stock si nécessaire
-      tags:
-        - Dose History
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - medicationId
-                - taken
-                - timestamp
-              properties:
-                medicationId:
-                  type: string
-                  format: uuid
-                taken:
-                  type: boolean
-                timestamp:
-                  type: string
-                  format: date-time
-      responses:
-        '201':
-          description: Prise enregistrée avec succès
+          description: Erreur interne du serveur
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DoseHistory'
-        '404':
-          description: Médicament non trouvé
-        '401':
-          description: Non authentifié
-        '500':
-          description: Erreur serveur
+                $ref: '#/components/schemas/Error'
 
-  /dose-history/medication/{medicationId}:
+  /posts/{postId}:
     delete:
-      summary: Supprimer l'historique d'un médicament
-      description: Supprime tout l'historique des prises pour un médicament spécifique
+      summary: Supprimer un post
+      description: Supprime un post et toutes ses données associées
       tags:
-        - Dose History
+        - Posts
+      security:
+        - ClerkAuth: []
       parameters:
-        - name: medicationId
+        - name: postId
           in: path
           required: true
           schema:
             type: string
             format: uuid
-          description: ID du médicament
-      responses:
-        '204':
-          description: Historique supprimé avec succès
-        '401':
-          description: Non authentifié
-        '500':
-          description: Erreur serveur
-
-  # === RAPPELS ET STATISTIQUES ===
-  /reminders/refill:
-    get:
-      summary: Récupérer les rappels de renouvellement
-      description: Retourne la liste des médicaments nécessitant un renouvellement
-      tags:
-        - Reminders
       responses:
         '200':
-          description: Rappels récupérés avec succès
+          description: Post supprimé avec succès
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Medication'
-        '401':
-          description: Non authentifié
-        '500':
-          description: Erreur serveur
-
-  /reminders/today:
-    get:
-      summary: Récupérer les médicaments du jour avec rappels
-      description: Retourne les médicaments programmés pour aujourd'hui avec leur statut de prise
-      tags:
-        - Reminders
-      responses:
-        '200':
-          description: Médicaments du jour récupérés avec succès
+                $ref: '#/components/schemas/Success'
+        '404':
+          description: Post non trouvé
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      format: uuid
-                    name:
-                      type: string
-                    dosage:
-                      type: string
-                    times:
-                      type: array
-                      items:
-                        type: string
-                    color:
-                      type: string
-                    reminderEnabled:
-                      type: boolean
-                    takenToday:
-                      type: integer
-                      description: Nombre de doses prises aujourd'hui
-        '401':
-          description: Non authentifié
+                $ref: '#/components/schemas/Error'
         '500':
-          description: Erreur serveur
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /stats:
-    get:
-      summary: Récupérer les statistiques d'observance
-      description: Retourne les statistiques d'observance thérapeutique sur une période
+  /posts/toggle-like:
+    post:
+      summary: Aimer/Ne plus aimer un post
+      description: Permet d'aimer ou de ne plus aimer un post
       tags:
-        - Statistics
+        - Posts
+      security:
+        - ClerkAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - postId
+              properties:
+                postId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Statut de like modifié
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  liked:
+                    type: boolean
+        '404':
+          description: Post non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # =========================================
+  # Routes Commentaires
+  # =========================================
+  /comments:
+    post:
+      summary: Ajouter un commentaire
+      description: Ajoute un commentaire à un post
+      tags:
+        - Comments
+      security:
+        - ClerkAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+                - postId
+              properties:
+                content:
+                  type: string
+                postId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Commentaire ajouté avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '404':
+          description: Post non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /comments/{postId}:
+    get:
+      summary: Obtenir les commentaires d'un post
+      description: Récupère tous les commentaires d'un post spécifique
+      tags:
+        - Comments
+      security:
+        - ClerkAuth: []
       parameters:
-        - $ref: '#/components/parameters/Days'
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
-          description: Statistiques récupérées avec succès
+          description: Commentaires récupérés avec succès
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MedicationStats'
-        '401':
-          description: Non authentifié
+                  $ref: '#/components/schemas/Comment'
         '500':
-          description: Erreur serveur
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # =========================================
+  # Routes Bookmarks
+  # =========================================
+  /bookmarks/toggle:
+    post:
+      summary: Ajouter/Retirer un bookmark
+      description: Permet d'ajouter ou de retirer un post des favoris
+      tags:
+        - Bookmarks
+      security:
+        - ClerkAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - postId
+              properties:
+                postId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Statut de bookmark modifié
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookmarked:
+                    type: boolean
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /bookmarks:
+    get:
+      summary: Obtenir les posts bookmarkés
+      description: Récupère tous les posts favoris de l'utilisateur connecté
+      tags:
+        - Bookmarks
+      security:
+        - ClerkAuth: []
+      responses:
+        '200':
+          description: Bookmarks récupérés avec succès
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Post'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # =========================================
+  # Routes Notifications
+  # =========================================
+  /notifications:
+    get:
+      summary: Obtenir les notifications
+      description: Récupère toutes les notifications de l'utilisateur connecté
+      tags:
+        - Notifications
+      security:
+        - ClerkAuth: []
+      responses:
+        '200':
+          description: Notifications récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # =========================================
+  # Routes Système
+  # =========================================
+  /health:
+    get:
+      summary: Vérifier l'état du serveur
+      description: Endpoint de santé pour vérifier que le serveur fonctionne
+      tags:
+        - System
+      responses:
+        '200':
+          description: Serveur fonctionne correctement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+                  environment:
+                    type: string
 
 tags:
-  - name: Health
-    description: Endpoints de vérification de l'état de l'API
-  - name: Medications
-    description: Gestion des médicaments
-  - name: Dose History
-    description: Historique des prises de médicaments
-  - name: Reminders
-    description: Rappels et notifications
-  - name: Statistics
-    description: Statistiques d'observance
+  - name: Webhooks
+    description: Endpoints webhooks pour les services externes
+  - name: Users
+    description: Gestion des utilisateurs et profils
+  - name: Posts
+    description: Gestion des publications
+  - name: Comments
+    description: Gestion des commentaires
+  - name: Bookmarks
+    description: Gestion des favoris
+  - name: Notifications
+    description: Gestion des notifications
+  - name: System
+    description: Endpoints système et santé

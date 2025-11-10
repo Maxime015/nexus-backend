@@ -1,11 +1,12 @@
 import cron from "cron";
 import https from "https";
+import { ENV } from "./env.js";
 
 // Création d'une tâche planifiée (Cron Job)
 // Cette tâche envoie une requête GET à l’API toutes les 14 minutes
 const job = new cron.CronJob("*/14 * * * *", function () {
   https
-    .get(process.env.API_URL, (res) => {
+    .get(ENV.API_URL, (res) => {
       if (res.statusCode === 200)
         console.log("✅ Requête GET envoyée avec succès");
       else

@@ -1,121 +1,416 @@
-# 💊 Medication Tracker - Backend API
+<div align="center">
 
-API RESTful pour le suivi des médicaments, rappels de prise, historique et statistiques d’observance thérapeutique.  
-Développée avec **Express.js**, **PostgreSQL (Neon)**, **Clerk** et **Upstash Redis**.
+# 📱 Nexus — API Backend de l’Application de Réseau Social  
 
----
+🌀 Backend API construit avec **Express.js**, **PostgreSQL (Neon)** et **Clerk** pour une authentification sécurisée.
 
-## ⚙️ Fonctionnalités principales
-
-- 🔐 **Auth sécurisée (Clerk)** — JWT, middleware de protection.  
-- 💊 **Gestion des médicaments** — ajout, modification, suppression, suivi du stock.  
-- ⏰ **Rappels intelligents** — notifications de prise et alertes de renouvellement.  
-- 📈 **Statistiques** — suivi des prises et taux d’observance.  
-- 🚀 **Optimisation** — tâches planifiées, rate limiting, documentation Swagger.
+</div>
 
 ---
 
-## 🛠️ Stack technique
+## 🚀 Fonctionnalités
 
-| Composant | Technologie |
+### 👥 Gestion des Utilisateurs
+- ✅ Authentification sécurisée avec **Clerk**  
+- 👤 Profils personnalisables (photo, bio, bannière)  
+- 🔍 Système de followers (suivre / ne plus suivre)  
+- 📝 Informations personnelles enrichies  
+
+### 📱 Publications
+- ✨ Création de posts avec texte et images  
+- 🖼️ Upload via **Cloudinary**  
+- ❤️ Likes en temps réel  
+- 🗑️ Suppression avec confirmation  
+- 📊 Compteurs de likes & commentaires  
+
+### 💬 Interactions Sociales
+- 💬 Commentaires sur les posts  
+- 🔖 Bookmarks (posts favoris)  
+- 🔔 Notifications dynamiques  
+- 👀 Flux d’actualités personnalisé  
+
+### 🛡️ Sécurité & Performance
+- 🔒 Authentification **JWT** via Clerk  
+- 🛡️ Protection **Arcjet** contre les bots  
+- ⚡ Rate limiting via **Upstash Redis**  
+- 📡 API RESTful structurée  
+- 🚀 Optimisation des performances  
+
+---
+
+## 🛠️ Stack Technique
+
+| Catégorie | Technologies |
 |------------|--------------|
-| Framework | Express.js |
-| Base de données | PostgreSQL (Neon) |
-| Authentification | Clerk |
-| Cache / Limites | Upstash Redis |
-| Documentation | Swagger |
-| Déploiement | Render |
+| **Backend** | Node.js • Express.js |
+| **Base de données** | PostgreSQL (Neon) |
+| **Auth** | Clerk |
+| **Stockage d'images** | Cloudinary |
+| **Sécurité** | Arcjet |
+| **Cache / Rate Limit** | Upstash Redis |
 
 ---
 
-## 📋 Prérequis
+## 📦 Installation
 
+### 🔧 Prérequis
 - Node.js **v18+**  
 - Compte **Clerk**  
-- Base de données **Neon**  
-- (Optionnel) **Upstash Redis**
+- Base de données **PostgreSQL (Neon)**  
+- Compte **Cloudinary**
 
 ---
 
-## 🚀 Installation rapide
+### ⚙️ Étapes d’installation
 
+#### 1️⃣ Cloner le projet
 ```bash
-# 1. Cloner le projet
-git clone <votre-repo>
-cd medication-tracker-backend
+git clone https://github.com/Maxime015/nexus-backend.git
+cd nexus-backend
+```
 
-# 2. Installer les dépendances
+#### 2️⃣ Installer les dépendances
+```bash
 npm install
 ```
 
-Créer un fichier `.env` :
-```env
-DATABASE_URL=postgresql://user:password@ep-example.neon.tech/dbname?sslmode=require
-CLERK_SECRET_KEY=sk_test_votre_cle
-PORT=3000
-```
-
+#### 3️⃣ Configurer les variables d’environnement
 ```bash
-# 3. Lancer le serveur
+cp .env.example .env
+```
+
+Puis remplir le fichier `.env` :
+```env
+# Database
+DATABASE_URL=votre_url_neon
+
+# Authentication
+CLERK_PUBLISHABLE_KEY=votre_cle_publique
+CLERK_SECRET_KEY=votre_cle_secrete
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=votre_nom_cloud
+CLOUDINARY_API_KEY=votre_cle_api
+CLOUDINARY_API_SECRET=votre_secret
+
+# Security
+ARCJET_KEY=votre_cle_arcjet
+
+# Redis
+UPSTASH_REDIS_REST_URL=votre_url_redis
+UPSTASH_REDIS_REST_TOKEN=votre_token_redis
+
+# App
+PORT=3000
+NODE_ENV=development
+API_URL=http://votre_url_render_ou_vercel/health
+```
+
+#### 4️⃣ Lancer l’application
+```bash
+# Mode développement
 npm run dev
+
+# Mode production
+npm start
 ```
 
 ---
 
-## 🔗 Endpoints principaux
+## 🗃️ Structure de la Base de Données
 
-| Endpoint | Méthode | Description |
-|-----------|----------|-------------|
-| `/api/medications` | GET / POST / PUT / DELETE | Gérer les médicaments |
-| `/api/dose-history` | GET / POST | Historique des prises |
-| `/api/reminders/today` | GET | Médicaments du jour |
-| `/api/stats` | GET | Statistiques d’observance |
+| Table | Description |
+|--------|--------------|
+| 👥 users | Utilisateurs |
+| 📝 posts | Publications |
+| ❤️ likes | Likes des posts |
+| 💬 comments | Commentaires |
+| 👀 follows | Relations de suivi |
+| 🔔 notifications | Notifications |
+| 🔖 bookmarks | Posts favoris |
 
-**Auth requise :**
-```http
-Authorization: Bearer <token_clerk>
+---
+
+## 🏗️ Architecture du Système
+
+```mermaid
+graph TB
+    subgraph "📱 Clients"
+        WEB[🌐 Web Browser]
+        MOBILE[📱 Mobile App]
+    end
+
+    LB[🔄 Load Balancer]
+
+    subgraph "⚡ Application Nexus"
+        subgraph "🛡️ Middlewares"
+            CORS[🌐 CORS]
+            RATE_LIMIT[📊 Rate Limiting]
+            ARCJET[🛡️ Arcjet Security]
+            CLERK_AUTH[🔐 Clerk Auth]
+            UPLOAD[📤 Upload Middleware]
+        end
+
+        subgraph "🚀 Routes API"
+            USERS_ROUTE[👥 Users]
+            POSTS_ROUTE[📝 Posts]
+            COMMENTS_ROUTE[💬 Comments]
+            NOTIFICATIONS_ROUTE[🔔 Notifications]
+            BOOKMARKS_ROUTE[🔖 Bookmarks]
+        end
+
+        subgraph "🎯 Controllers"
+            USERS_CTRL[👤 Users Controller]
+            POSTS_CTRL[📮 Posts Controller]
+            COMMENTS_CTRL[💭 Comments Controller]
+            NOTIF_CTRL[🔔 Notifications Controller]
+            BOOKMARKS_CTRL[⭐ Bookmarks Controller]
+        end
+
+        subgraph "🗃️ Models & Database"
+            DB[(🐘 PostgreSQL Neon)]
+        end
+    end
+
+    subgraph "🔗 Services Externes"
+        CLERK[🔐 Clerk]
+        CLOUDINARY[☁️ Cloudinary]
+        ARCJET_SVC[🛡️ Arcjet]
+        UPSTASH[🔴 Upstash Redis]
+        CRON[⏰ Cron Jobs]
+    end
+
+    WEB --> LB
+    MOBILE --> LB
+    LB --> CORS
+    CORS --> RATE_LIMIT
+    RATE_LIMIT --> ARCJET
+    ARCJET --> CLERK_AUTH
+    CLERK_AUTH --> USERS_ROUTE
+    USERS_ROUTE --> USERS_CTRL
+    USERS_CTRL --> DB
+    POSTS_ROUTE --> POSTS_CTRL
+    POSTS_CTRL --> CLOUDINARY
+    POSTS_CTRL --> DB
+    ARCJET --> ARCJET_SVC
+    RATE_LIMIT --> UPSTASH
 ```
 
 ---
 
-## 📚 Documentation
+## 📊 Flux de Données
 
-Swagger UI disponible sur :  
-👉 `http://localhost:3000/api-docs`
+```mermaid
+sequenceDiagram
+    participant C as 📱 Client
+    participant LB as 🔄 Load Balancer
+    participant MW as 🛡️ Middlewares
+    participant API as 🚀 API Routes
+    participant CTRL as 🎯 Controllers
+    participant DB as 🗃️ Database
+    participant EXT as 🔗 Services Externes
+
+    C->>LB: Requête HTTP
+    LB->>MW: Passage des middlewares
+    MW->>EXT: Vérification Auth (Clerk)
+    EXT-->>MW: Token valide/invalide
+    MW->>API: Routage vers l'endpoint
+
+    API->>CTRL: Appel du Controller
+    CTRL->>EXT: Upload image (Cloudinary)
+    EXT-->>CTRL: URL de l'image
+    CTRL->>DB: Insertion du post
+    DB-->>CTRL: Post créé
+    CTRL-->>C: Réponse JSON
+```
 
 ---
 
-## 🧩 Structure du projet
+## 🗂️ Structure des Données
 
-```
-backend/
-├── config/          # Configuration
-├── controllers/     # Logique métier
-├── middleware/      # Sécurité & validation
-├── routes/          # Routes API
-└── docs/            # Documentation Swagger
+```mermaid
+erDiagram
+    USERS {
+        uuid _id PK
+        string clerk_id UK
+        string username
+        string fullname
+        string email
+        text bio
+        string image
+        int followers
+        int following
+        int posts
+        timestamp created_at
+    }
+
+    POSTS {
+        uuid _id PK
+        uuid user_id FK
+        string image_url
+        string storage_id
+        text caption
+        int likes
+        int comments
+        timestamp created_at
+    }
+
+    LIKES {
+        uuid _id PK
+        uuid user_id FK
+        uuid post_id FK
+        timestamp created_at
+    }
+
+    COMMENTS {
+        uuid _id PK
+        uuid user_id FK
+        uuid post_id FK
+        text content
+        timestamp created_at
+    }
+
+    FOLLOWS {
+        uuid _id PK
+        uuid follower_id FK
+        uuid following_id FK
+        timestamp created_at
+    }
+
+    NOTIFICATIONS {
+        uuid _id PK
+        uuid receiver_id FK
+        uuid sender_id FK
+        string type
+        uuid post_id FK
+        uuid comment_id FK
+        timestamp created_at
+    }
+
+    BOOKMARKS {
+        uuid _id PK
+        uuid user_id FK
+        uuid post_id FK
+        timestamp created_at
+    }
+
+    USERS ||--o{ POSTS : "crée"
+    USERS ||--o{ LIKES : "donne"
+    USERS ||--o{ COMMENTS : "écrit"
+    USERS ||--o{ FOLLOWS : "suit"
+    USERS ||--o{ NOTIFICATIONS : "reçoit"
+    USERS ||--o{ BOOKMARKS : "sauvegarde"
+    POSTS ||--o{ LIKES : "reçoit"
+    POSTS ||--o{ COMMENTS : "contient"
+    POSTS ||--o{ NOTIFICATIONS : "déclenche"
+    POSTS ||--o{ BOOKMARKS : "est sauvegardé"
+    COMMENTS ||--o{ NOTIFICATIONS : "génère"
 ```
 
 ---
 
-## 🐛 Dépannage rapide
+## 🔄 Flux des Requêtes
 
-| Problème | Solution |
-|-----------|-----------|
-| Erreur DB | Vérifier `DATABASE_URL` et l’état de Neon |
-| Auth invalide | Vérifier `CLERK_SECRET_KEY` |
-| Rate limit | Ajuster la config Upstash |
+```mermaid
+flowchart TD
+    START([🌐 Requête Client]) --> VALIDATE{📋 Validation}
+    VALIDATE -->|Invalide| ERROR_400[❌ 400 Bad Request]
+    VALIDATE -->|Valide| AUTH{🔐 Authentification}
+    AUTH -->|Non authentifié| ERROR_401[❌ 401 Unauthorized]
+    AUTH -->|OK| RATE{📊 Rate Limit}
+    RATE -->|Trop de requêtes| ERROR_429[❌ 429 Too Many Requests]
+    RATE -->|OK| SECURITY{🛡️ Arcjet}
+    SECURITY -->|Bot détecté| ERROR_403[❌ 403 Forbidden]
+    SECURITY -->|OK| PROCESS[⚡ Traitement Métier]
+    PROCESS --> DB_OP{🗃️ Opération DB}
+    DB_OP -->|Succès| SUCCESS[✅ 200 OK]
+    DB_OP -->|Erreur| ERROR_500[❌ 500 Server Error]
+    SUCCESS --> LOG[📝 Log]
+    ERROR_500 --> LOG
+    LOG --> END([🏁 Fin])
+```
+
+---
+
+## 📚 Documentation API
+
+### 🔗 Accès
+```
+http://localhost:3000/api-docs
+```
+
+### 🛣️ Endpoints Principaux
+
+#### 👥 Utilisateurs
+```
+GET    /api/users/profile/:id
+PUT    /api/users/profile
+POST   /api/users/toggle-follow
+```
+
+#### 📝 Publications
+```
+POST   /api/posts
+GET    /api/posts/feed
+GET    /api/posts/user/:userId
+DELETE /api/posts/:postId
+POST   /api/posts/toggle-like
+```
+
+#### 💬 Commentaires
+```
+POST   /api/comments
+GET    /api/comments/:postId
+```
+
+#### 🔖 Favoris
+```
+POST   /api/bookmarks/toggle
+GET    /api/bookmarks
+```
+
+#### 🔔 Notifications
+```
+GET    /api/notifications
+```
 
 ---
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues :  
-Fork → Branche → Commit → Pull Request 🚀
+1. 🍴 Fork du projet  
+2. 🌿 Crée une branche :
+   ```bash
+   git checkout -b feature/NouvelleFeature
+   ```
+3. 💾 Commit :
+   ```bash
+   git commit -m "Add NouvelleFeature"
+   ```
+4. 📤 Push :
+   ```bash
+   git push origin feature/NouvelleFeature
+   ```
+5. 🔀 Ouvre une Pull Request  
 
 ---
 
 ## 📄 Licence
+Distribué sous la licence **MIT**.  
+Voir [`LICENSE`](LICENSE) pour plus de détails.
 
-Projet sous licence **MIT**.  
-Développé avec ❤️ pour une meilleure observance thérapeutique.
+---
+
+## 👨‍💻 Auteur
+**Maxime ANANIVI** — Développeur principal  
+[GitHub](https://github.com/Maxime015) • [Portfolio](https://votresite.com)
+
+---
+
+## 🙏 Remerciements
+- [Clerk](https://clerk.dev) — Authentification sécurisée  
+- [Cloudinary](https://cloudinary.com) — Stockage et optimisation d’images  
+- [Neon](https://neon.com) — PostgreSQL serverless  
+- [Arcjet](https://arcjet.com) — Sécurité avancée  
+- [Upstash](https://upstash.com) — Redis & Rate Limiting  
+

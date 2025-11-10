@@ -1,38 +1,38 @@
 import express from 'express';
-import medicationsController from '../controllers/medicationsController.js';
-import doseHistoryController from '../controllers/doseHistoryController.js';
-import remindersController from '../controllers/remindersController.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { usersController } from '../controllers/usersController.js';
+import { postsController } from '../controllers/postsController.js';
+import { commentsController } from '../controllers/commentsController.js';
+import { bookmarksController } from '../controllers/bookmarksController.js';
+import { notificationsController } from '../controllers/notificationsController.js';
+import { requireAuth } from '../middlewares/auth.js';
 
 const router = express.Router();
 
-// Appliquer le middleware d'authentification à toutes les routes
-router.use(authMiddleware);
+// Webhook Clerk (sans authentification)
+router.post('/webhooks/clerk', usersController.createUser);
 
-// Routes des médicaments
-router.get('/medications', medicationsController.getMedications);
-router.post('/medications', medicationsController.createMedication);
-router.put('/medications/:id', medicationsController.updateMedication);
-router.delete('/medications/:id', medicationsController.deleteMedication);
-router.patch('/medications/:id/supply', medicationsController.updateSupply);
+// Routes utilisateurs
+router.get('/users/profile/:id', requireAuth, usersController.getUserProfile);
+router.put('/users/profile', requireAuth, usersController.updateProfile);
+router.get('/users/is-following/:followingId', requireAuth, usersController.isFollowing);
+router.post('/users/toggle-follow', requireAuth, usersController.toggleFollow);
 
-// Routes de l'historique des prises
-router.get('/dose-history', doseHistoryController.getDoseHistory);
-router.get('/dose-history/today', doseHistoryController.getTodaysDoses);
-router.post('/dose-history', doseHistoryController.recordDose);
-router.delete('/dose-history/medication/:medicationId', doseHistoryController.deleteMedicationHistory);
+// Routes posts
+router.post('/posts', requireAuth, postsController.createPost);
+router.get('/posts/feed', requireAuth, postsController.getFeedPosts);
+router.get('/posts/user/:userId?', requireAuth, postsController.getPostsByUser);
+router.delete('/posts/:postId', requireAuth, postsController.deletePost);
+router.post('/posts/toggle-like', requireAuth, postsController.toggleLike);
 
-// Routes des rappels
-router.get('/reminders/today', remindersController.getTodaysMedications);
-router.get('/stats', remindersController.getMedicationStats);
+// Routes commentaires
+router.post('/comments', requireAuth, commentsController.addComment);
+router.get('/comments/:postId', requireAuth, commentsController.getComments);
 
-// Route de santé de l'API
-router.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    user: req.user.id 
-  });
-});
+// Routes bookmarks
+router.post('/bookmarks/toggle', requireAuth, bookmarksController.toggleBookmark);
+router.get('/bookmarks', requireAuth, bookmarksController.getBookmarkedPosts);
+
+// Routes notifications
+router.get('/notifications', requireAuth, notificationsController.getNotifications);
 
 export default router;

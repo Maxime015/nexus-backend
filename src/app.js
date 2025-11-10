@@ -1,31 +1,43 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { initDB } from './config/db.js';
+import dotenv from 'dotenv';
 import routes from './routes/index.js';
+import { initDB } from './config/db.js';
+import { clerkMiddleware } from "@clerk/express";
+import { arcjetMiddleware } from "./middlewares/arcjet.middleware.js";
+import { ENV } from "./config/env.js";
 import job from './config/cron.js';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path'; 
-import rateLimiter from "./middleware/rateLimiter.js";
+import rateLimiter from "./middlewares/rateLimiter.js";
+
+dotenv.config();
 
 const app = express();
 
-if (process.env.NODE_ENV === "production") job.start();
+if (ENV.NODE_ENV === "production") job.start();
 
 // Configuration Swagger
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const swaggerDocument = YAML.load(join(__dirname, './docs/swagger.yaml'));
 
-const PORT = process.env.PORT || 3000;
-
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(rateLimiter);
 
+// Clerk middleware
+app.use(clerkMiddleware());
+app.use(arcjetMiddleware);
+
+app.get("/", (req, res) => res.send("Hello from server"));
+
+// Initialisation de la base de données
+initDB().catch(console.error);
 
 // Route de documentation Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -36,31 +48,38 @@ app.get('/health', (req, res) => {
     status: 'OK', 
     message: 'Serveur fonctionne',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'production'
+    environment: ENV.NODE_ENV || 'production'
   });
 });
-
 
 // Routes
 app.use('/api', routes);
 
-// Gestion des erreurs
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+// Route health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Route 404
+// Gestion des erreurs
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
+});
+
+// Gestion des routes non trouvées
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
+
+const PORT = ENV.PORT || 3000;
 
 // Démarrage du serveur
 
 initDB().then(() => {
   app.listen(PORT, () => {
-    console.log("Server is up and running on PORT:", PORT);
-    console.log(`API Documentation: http://localhost:${PORT}/api-docs`);
+    console.log("Server is up and running on PORT: 📍", PORT);
+    console.log(`API Documentation 📚: http://localhost:${PORT}/api-docs`);
   });
 });
- 
+
+export default app; 
