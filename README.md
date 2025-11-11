@@ -102,8 +102,9 @@ UPSTASH_REDIS_REST_TOKEN=votre_token_redis
 
 # App
 PORT=3000
+API_URL=https://votre_app.example
+HEALTH_CHECK_URL=https://votre_app.example/health
 NODE_ENV=development
-API_URL=http://votre_url_render_ou_vercel/health
 ```
 
 #### 4️⃣ Lancer l’application
@@ -415,5 +416,5 @@ Voir [`LICENSE`](LICENSE) pour plus de détails.
 - [Cloudinary](https://cloudinary.com) — Stockage et optimisation d’images  
 - [Neon](https://neon.com) — PostgreSQL serverless  
 - [Arcjet](https://arcjet.com) — Sécurité avancée  
-- [Upstash](https://upstash.com) — Redis & Rate Limiting  
+- [Upstash](https://upstash.com) — Redis & Rate Limiting
 
