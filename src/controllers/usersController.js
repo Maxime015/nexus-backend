@@ -14,6 +14,9 @@ export const usersController = {
       }
 
       console.log(`🔄 Syncing user with Clerk ID: ${userId}`);
+      console.log('🔄 Starting user sync process');
+      console.log('📋 Auth object:', req.auth);
+      console.log('👤 User ID from auth:', userId);
 
       // Vérifier si l'utilisateur existe déjà
       const existingUser = await sql`
@@ -48,6 +51,15 @@ export const usersController = {
       const last_name = clerkUser.lastName || '';
       const fullname = `${first_name} ${last_name}`.trim() || 'Anonymous User';
       const image = clerkUser.imageUrl || '';
+
+      // Et après la récupération de l'utilisateur Clerk :
+      console.log('📋 Clerk user data:', {
+        id: clerkUser.id,
+        email: clerkUser.emailAddresses?.[0]?.emailAddress,
+        firstName: clerkUser.firstName,
+        lastName: clerkUser.lastName,
+        username: clerkUser.username
+      });
       
       // Générer un username unique
       const baseUsername = clerkUser.username || 
