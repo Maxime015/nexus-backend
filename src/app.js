@@ -60,11 +60,6 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Gestion des erreurs
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
-});
 
 // Gestion des routes non trouvées
 app.use('*', (req, res) => {
@@ -73,13 +68,34 @@ app.use('*', (req, res) => {
 
 const PORT = ENV.PORT || 3000;
 
-// Démarrage du serveur
 
-initDB().then(() => {
-  app.listen(PORT, () => {
-    console.log("Server is up and running on PORT: 📍", PORT);
-    console.log(`API Documentation 📚: http://localhost:${PORT}/api-docs`);
-  });
+
+// Gestion des erreurs
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ error: err.message || "Internal server error" });
 });
 
-export default app; 
+// Démarrage du serveur
+
+const startServer = async () => {
+  try {
+    await initDB();
+
+    // listen for local development
+    if (ENV.NODE_ENV !== "production") {
+      app.listen(ENV.PORT, () => {
+        console.log("Server is up and running on PORT 📍 :", ENV.PORT);
+        console.log(`API Documentation 📚: http://localhost:${PORT}/api-docs`);
+      });
+    }
+  } catch (error) {
+    console.error("Failed to start server:", error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
+
+// export for vercel
+export default app;

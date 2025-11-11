@@ -8,10 +8,9 @@ import { requireAuth } from '../middlewares/auth.js';
 
 const router = express.Router();
 
-// Webhook Clerk (sans authentification)
-router.post('/webhooks/clerk', usersController.createUser);
-
 // Routes utilisateurs
+router.post('/users/sync', requireAuth, usersController.syncUser); // Nouvelle route de sync
+router.get('/users/me', requireAuth, usersController.getCurrentUser); // Récupérer l'utilisateur courant
 router.get('/users/profile/:id', requireAuth, usersController.getUserProfile);
 router.put('/users/profile', requireAuth, usersController.updateProfile);
 router.get('/users/is-following/:followingId', requireAuth, usersController.isFollowing);

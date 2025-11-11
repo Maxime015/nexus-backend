@@ -343,8 +343,11 @@ http://localhost:3000/api-docs
 
 #### 👥 Utilisateurs
 ```
+POST   /api/users/sync
+GET    /api/users/me
 GET    /api/users/profile/:id
 PUT    /api/users/profile
+GET    /api/users/is-following/:followingId
 POST   /api/users/toggle-follow
 ```
 

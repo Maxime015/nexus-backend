@@ -36,6 +36,7 @@ components:
           type: string
         email:
           type: string
+          format: email
         bio:
           type: string
         image:
@@ -50,6 +51,14 @@ components:
           type: string
           format: date-time
 
+    UserResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        message:
+          type: string
+
     Post:
       type: object
       properties:
@@ -59,11 +68,9 @@ components:
         user_id:
           type: string
           format: uuid
-        image_url:
+        content:
           type: string
-        storage_id:
-          type: string
-        caption:
+        image:
           type: string
         likes:
           type: integer
@@ -144,15 +151,13 @@ components:
             _id:
               type: string
               format: uuid
-            imageUrl:
+            image:
               type: string
 
     Error:
       type: object
       properties:
         error:
-          type: string
-        message:
           type: string
 
     Success:
@@ -161,53 +166,55 @@ components:
         message:
           type: string
 
+    FollowStatus:
+      type: object
+      properties:
+        isFollowing:
+          type: boolean
+
+    ToggleFollowResponse:
+      type: object
+      properties:
+        followed:
+          type: boolean
+
+    ToggleLikeResponse:
+      type: object
+      properties:
+        liked:
+          type: boolean
+
+    ToggleBookmarkResponse:
+      type: object
+      properties:
+        bookmarked:
+          type: boolean
+
 paths:
   # =========================================
-  # Routes Webhooks (sans authentification)
+  # Routes Utilisateurs
   # =========================================
-  /webhooks/clerk:
+  /users/sync:
     post:
-      summary: Webhook Clerk pour la création d'utilisateurs
-      description: Endpoint webhook pour créer des utilisateurs lors de l'inscription via Clerk
+      summary: Synchroniser l'utilisateur avec la base de données
+      description: Crée ou vérifie l'existence de l'utilisateur dans la base de données après authentification Clerk
       tags:
-        - Webhooks
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                id:
-                  type: string
-                email_addresses:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      email_address:
-                        type: string
-                first_name:
-                  type: string
-                last_name:
-                  type: string
-                image_url:
-                  type: string
-                username:
-                  type: string
+        - Users
+      security:
+        - ClerkAuth: []
       responses:
         '201':
           description: Utilisateur créé avec succès
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UserResponse'
         '200':
           description: Utilisateur déjà existant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UserResponse'
         '500':
           description: Erreur interne du serveur
           content:
@@ -215,9 +222,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  # =========================================
-  # Routes Utilisateurs
-  # =========================================
+  /users/me:
+    get:
+      summary: Obtenir l'utilisateur connecté
+      description: Récupère les informations de l'utilisateur actuellement authentifié
+      tags:
+        - Users
+      security:
+        - ClerkAuth: []
+      responses:
+        '200':
+          description: Utilisateur récupéré avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: Utilisateur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /users/profile/{id}:
     get:
       summary: Obtenir le profil d'un utilisateur
@@ -239,7 +271,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UserResponse'
         '404':
           description: Utilisateur non trouvé
           content:
@@ -267,18 +299,28 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - fullname
               properties:
                 fullname:
                   type: string
+                  minLength: 1
                 bio:
                   type: string
+                  maxLength: 500
       responses:
         '200':
           description: Profil mis à jour avec succès
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Données de requête invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Erreur interne du serveur
           content:
@@ -307,10 +349,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  isFollowing:
-                    type: boolean
+                $ref: '#/components/schemas/FollowStatus'
+        '404':
+          description: Utilisateur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Erreur interne du serveur
           content:
@@ -344,10 +389,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  followed:
-                    type: boolean
+                $ref: '#/components/schemas/ToggleFollowResponse'
+        '400':
+          description: Impossible de se suivre soi-même
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Utilisateur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Erreur interne du serveur
           content:
@@ -369,15 +423,18 @@ paths:
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
+              required:
+                - content
               properties:
-                caption:
+                content:
                   type: string
+                  minLength: 1
+                  maxLength: 1000
                 image:
                   type: string
-                  format: binary
       responses:
         '201':
           description: Post créé avec succès
@@ -514,10 +571,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  liked:
-                    type: boolean
+                $ref: '#/components/schemas/ToggleLikeResponse'
         '404':
           description: Post non trouvé
           content:
@@ -554,6 +608,8 @@ paths:
               properties:
                 content:
                   type: string
+                  minLength: 1
+                  maxLength: 500
                 postId:
                   type: string
                   format: uuid
@@ -564,6 +620,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Comment'
+        '400':
+          description: Données de commentaire invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Post non trouvé
           content:
@@ -637,10 +699,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  bookmarked:
-                    type: boolean
+                $ref: '#/components/schemas/ToggleBookmarkResponse'
         '500':
           description: Erreur interne du serveur
           content:
@@ -718,17 +777,18 @@ paths:
                 properties:
                   status:
                     type: string
+                    example: "OK"
                   message:
                     type: string
+                    example: "Server is running"
                   timestamp:
                     type: string
                     format: date-time
                   environment:
                     type: string
+                    example: "development"
 
 tags:
-  - name: Webhooks
-    description: Endpoints webhooks pour les services externes
   - name: Users
     description: Gestion des utilisateurs et profils
   - name: Posts

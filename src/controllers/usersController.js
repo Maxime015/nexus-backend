@@ -1,41 +1,92 @@
 import sql from '../config/db.js';
-import { getAuthenticatedUser } from '../middlewares/auth.js';
+import { clerkClient } from '@clerk/clerk-sdk-node';
 
 export const usersController = {
-  // Créer un utilisateur
-  createUser: async (req, res) => {
+  // Synchroniser l'utilisateur (remplace createUser pour l'API)
+  syncUser: async (req, res) => {
     try {
-      const { id, email_addresses, first_name, last_name, image_url, username } = req.body;
+      const { userId } = req.auth; // Récupéré du middleware Clerk
       
-      const email = email_addresses?.[0]?.email_address;
-      const fullname = `${first_name || ''} ${last_name || ''}`.trim();
-      const finalUsername = username || email?.split('@')[0] || 
-        fullname.split(' ').join('_').toLowerCase() || `user_${id.substring(0, 6)}`;
-
       // Vérifier si l'utilisateur existe déjà
       const existingUser = await sql`
-        SELECT * FROM users WHERE clerk_id = ${id}
+        SELECT * FROM users WHERE clerk_id = ${userId}
       `;
 
       if (existingUser.length > 0) {
-        return res.status(200).json(existingUser[0]);
+        return res.status(200).json({ 
+          user: existingUser[0], 
+          message: "User already exists" 
+        });
       }
 
-      // Créer un nouvel utilisateur
+      // Récupérer les données utilisateur depuis Clerk
+      const clerkUser = await clerkClient.users.getUser(userId);
+      
+      const email = clerkUser.emailAddresses?.[0]?.emailAddress;
+      const first_name = clerkUser.firstName || '';
+      const last_name = clerkUser.lastName || '';
+      const fullname = `${first_name} ${last_name}`.trim();
+      
+      // Générer un username unique
+      const baseUsername = clerkUser.username || 
+        email?.split('@')[0] || 
+        fullname.split(' ').join('_').toLowerCase() || 
+        `user_${userId.substring(0, 6)}`;
+      
+      // Vérifier l'unicité du username
+      let finalUsername = baseUsername;
+      let counter = 1;
+      
+      while (true) {
+        const existingUsername = await sql`
+          SELECT _id FROM users WHERE username = ${finalUsername}
+        `;
+        
+        if (existingUsername.length === 0) break;
+        
+        finalUsername = `${baseUsername}${counter}`;
+        counter++;
+      }
+
+      // Créer le nouvel utilisateur
       const newUser = await sql`
         INSERT INTO users (clerk_id, username, fullname, email, image, followers, following, posts)
-        VALUES (${id}, ${finalUsername}, ${fullname}, ${email}, ${image_url}, 0, 0, 0)
-        RETURNING *
+        VALUES (${userId}, ${finalUsername}, ${fullname}, ${email}, ${clerkUser.imageUrl}, 0, 0, 0)
+        RETURNING _id, clerk_id, username, fullname, email, image, followers, following, posts, bio
       `;
 
-      res.status(201).json(newUser[0]);
+      res.status(201).json({ 
+        user: newUser[0], 
+        message: "User created successfully" 
+      });
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error('Error syncing user:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   },
 
-  // Obtenir le profil utilisateur
+  // Obtenir l'utilisateur courant
+  getCurrentUser: async (req, res) => {
+    try {
+      const { userId } = req.auth;
+      
+      const user = await sql`
+        SELECT _id, username, fullname, email, bio, image, followers, following, posts
+        FROM users WHERE clerk_id = ${userId}
+      `;
+
+      if (user.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json({ user: user[0] });
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+
+  // Obtenir le profil utilisateur par ID
   getUserProfile: async (req, res) => {
     try {
       const { id } = req.params;
@@ -49,7 +100,7 @@ export const usersController = {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      res.json(user[0]);
+      res.json({ user: user[0] });
     } catch (error) {
       console.error('Error fetching user profile:', error);
       res.status(500).json({ error: 'Internal server error' });
@@ -59,17 +110,17 @@ export const usersController = {
   // Mettre à jour le profil
   updateProfile: async (req, res) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const { userId } = req.auth;
       const { fullname, bio } = req.body;
 
       const updatedUser = await sql`
         UPDATE users 
         SET fullname = ${fullname}, bio = ${bio}
-        WHERE _id = ${user._id}
-        RETURNING *
+        WHERE clerk_id = ${userId}
+        RETURNING _id, username, fullname, email, bio, image, followers, following, posts
       `;
 
-      res.json(updatedUser[0]);
+      res.json({ user: updatedUser[0] });
     } catch (error) {
       console.error('Error updating profile:', error);
       res.status(500).json({ error: 'Internal server error' });
@@ -79,12 +130,20 @@ export const usersController = {
   // Vérifier si on suit un utilisateur
   isFollowing: async (req, res) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const { userId } = req.auth;
       const { followingId } = req.params;
+
+      const currentUser = await sql`
+        SELECT _id FROM users WHERE clerk_id = ${userId}
+      `;
+
+      if (currentUser.length === 0) {
+        return res.status(404).json({ error: 'Current user not found' });
+      }
 
       const follow = await sql`
         SELECT * FROM follows 
-        WHERE follower_id = ${user._id} AND following_id = ${followingId}
+        WHERE follower_id = ${currentUser[0]._id} AND following_id = ${followingId}
       `;
 
       res.json({ isFollowing: follow.length > 0 });
@@ -97,28 +156,45 @@ export const usersController = {
   // Suivre/Ne plus suivre un utilisateur
   toggleFollow: async (req, res) => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const { userId } = req.auth;
       const { followingId } = req.body;
+
+      // Récupérer les IDs des utilisateurs
+      const [currentUser, targetUser] = await Promise.all([
+        sql`SELECT _id FROM users WHERE clerk_id = ${userId}`,
+        sql`SELECT _id FROM users WHERE _id = ${followingId}`
+      ]);
+
+      if (currentUser.length === 0 || targetUser.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const currentUserId = currentUser[0]._id;
+      const targetUserId = targetUser[0]._id;
+
+      if (currentUserId === targetUserId) {
+        return res.status(400).json({ error: 'You cannot follow yourself' });
+      }
 
       // Vérifier si on suit déjà
       const existingFollow = await sql`
         SELECT * FROM follows 
-        WHERE follower_id = ${user._id} AND following_id = ${followingId}
+        WHERE follower_id = ${currentUserId} AND following_id = ${targetUserId}
       `;
 
       if (existingFollow.length > 0) {
         // Ne plus suivre
         await sql`
           DELETE FROM follows 
-          WHERE follower_id = ${user._id} AND following_id = ${followingId}
+          WHERE follower_id = ${currentUserId} AND following_id = ${targetUserId}
         `;
 
         // Mettre à jour les compteurs
         await sql`
-          UPDATE users SET following = following - 1 WHERE _id = ${user._id}
+          UPDATE users SET following = following - 1 WHERE _id = ${currentUserId}
         `;
         await sql`
-          UPDATE users SET followers = followers - 1 WHERE _id = ${followingId}
+          UPDATE users SET followers = followers - 1 WHERE _id = ${targetUserId}
         `;
 
         res.json({ followed: false });
@@ -126,21 +202,21 @@ export const usersController = {
         // Suivre
         await sql`
           INSERT INTO follows (follower_id, following_id)
-          VALUES (${user._id}, ${followingId})
+          VALUES (${currentUserId}, ${targetUserId})
         `;
 
         // Mettre à jour les compteurs
         await sql`
-          UPDATE users SET following = following + 1 WHERE _id = ${user._id}
+          UPDATE users SET following = following + 1 WHERE _id = ${currentUserId}
         `;
         await sql`
-          UPDATE users SET followers = followers + 1 WHERE _id = ${followingId}
+          UPDATE users SET followers = followers + 1 WHERE _id = ${targetUserId}
         `;
 
         // Créer une notification
         await sql`
           INSERT INTO notifications (receiver_id, sender_id, type)
-          VALUES (${followingId}, ${user._id}, 'follow')
+          VALUES (${targetUserId}, ${currentUserId}, 'follow')
         `;
 
         res.json({ followed: true });
