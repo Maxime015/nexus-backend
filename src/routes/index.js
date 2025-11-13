@@ -6,7 +6,7 @@ import { commentsController } from '../controllers/commentsController.js';
 import { bookmarksController } from '../controllers/bookmarksController.js';
 import { notificationsController } from '../controllers/notificationsController.js';
 import { requireAuth } from '../middlewares/auth.js';
-import upload from '../middlewares/upload.middleware.js'; // ← Ajouter cette importation
+import upload from '../middlewares/upload.middleware.js'; 
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ router.get('/users/is-following/:followingId', requireAuth, usersController.isFo
 router.post('/users/toggle-follow', requireAuth, usersController.toggleFollow);
 
 // Routes posts
-router.post('/posts', requireAuth, upload.single('image'), postsController.createPost); // ← Ajouter upload.single('image')
+router.post('/posts', requireAuth, upload.single('image'), postsController.createPost);
 router.get('/posts/feed', requireAuth, postsController.getFeedPosts);
 router.get('/posts/user/:userId?', requireAuth, postsController.getPostsByUser);
 router.delete('/posts/:postId', requireAuth, postsController.deletePost);

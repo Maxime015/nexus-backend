@@ -6,11 +6,26 @@ export const postsController = {
   // Créer un post
   createPost: async (req, res) => {
     try {
+      console.log("=== CREATE POST REQUEST ===");
+      console.log("Headers:", req.headers);
+      console.log("Body:", req.body);
+      console.log("File:", req.file);
+      console.log("File details:", {
+        originalname: req.file?.originalname,
+        mimetype: req.file?.mimetype,
+        size: req.file?.size
+      });
+
       const user = await getAuthenticatedUser(req);
       const { caption } = req.body;
       const imageFile = req.file;
 
+      console.log("User:", user._id);
+      console.log("Caption:", caption);
+      console.log("Has image:", !!imageFile);
+
       if (!caption && !imageFile) {
+        console.log("Error: Post must contain either text or image");
         return res.status(400).json({ error: 'Post must contain either text or image' });
       }
 
@@ -20,10 +35,14 @@ export const postsController = {
       // upload image to Cloudinary if provided
       if (imageFile) {
         try {
+          console.log("Starting Cloudinary upload...");
           // convert buffer to base64 for cloudinary
           const base64Image = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString(
             'base64'
           )}`;
+
+          console.log("Base64 image length:", base64Image.length);
+          console.log("Mime type:", imageFile.mimetype);
 
           const uploadResponse = await cloudinary.uploader.upload(base64Image, {
             folder: 'social_media_posts',
@@ -37,12 +56,14 @@ export const postsController = {
           
           imageUrl = uploadResponse.secure_url;
           storageId = uploadResponse.public_id;
+          console.log("Cloudinary upload successful:", imageUrl);
         } catch (uploadError) {
           console.error('Cloudinary upload error:', uploadError);
           return res.status(400).json({ error: 'Failed to upload image' });
         }
       }
 
+      console.log("Inserting post into database...");
       const newPost = await sql`
         INSERT INTO posts (user_id, image_url, storage_id, caption, likes, comments)
         VALUES (${user._id}, ${imageUrl}, ${storageId}, ${caption || ''}, 0, 0)
@@ -54,9 +75,11 @@ export const postsController = {
         UPDATE users SET posts = posts + 1 WHERE _id = ${user._id}
       `;
 
+      console.log("Post created successfully:", newPost[0]._id);
       res.status(201).json(newPost[0]);
     } catch (error) {
       console.error('Error creating post:', error);
+      console.error('Error stack:', error.stack);
       res.status(500).json({ error: 'Internal server error' });
     }
   },
