@@ -1,3 +1,4 @@
+// index.js
 import express from 'express';
 import { usersController } from '../controllers/usersController.js';
 import { postsController } from '../controllers/postsController.js';
@@ -5,19 +6,20 @@ import { commentsController } from '../controllers/commentsController.js';
 import { bookmarksController } from '../controllers/bookmarksController.js';
 import { notificationsController } from '../controllers/notificationsController.js';
 import { requireAuth } from '../middlewares/auth.js';
+import upload from '../middlewares/upload.middleware.js'; // ← Ajouter cette importation
 
 const router = express.Router();
 
 // Routes utilisateurs
-router.post('/users/sync', requireAuth, usersController.syncUser); // Nouvelle route de sync
-router.get('/users/me', requireAuth, usersController.getCurrentUser); // Récupérer l'utilisateur courant
+router.post('/users/sync', requireAuth, usersController.syncUser);
+router.get('/users/me', requireAuth, usersController.getCurrentUser);
 router.get('/users/profile/:id', requireAuth, usersController.getUserProfile);
 router.put('/users/profile', requireAuth, usersController.updateProfile);
 router.get('/users/is-following/:followingId', requireAuth, usersController.isFollowing);
 router.post('/users/toggle-follow', requireAuth, usersController.toggleFollow);
 
 // Routes posts
-router.post('/posts', requireAuth, postsController.createPost);
+router.post('/posts', requireAuth, upload.single('image'), postsController.createPost); // ← Ajouter upload.single('image')
 router.get('/posts/feed', requireAuth, postsController.getFeedPosts);
 router.get('/posts/user/:userId?', requireAuth, postsController.getPostsByUser);
 router.delete('/posts/:postId', requireAuth, postsController.deletePost);
