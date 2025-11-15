@@ -2,8 +2,8 @@
 import sql from '../config/db.js';
 import { getAuthenticatedUser } from '../middlewares/auth.js';
 
+// controllers/notificationsController.js
 export const notificationsController = {
-  // Obtenir les notifications
   getNotifications: async (req, res) => {
     try {
       const user = await getAuthenticatedUser(req);
@@ -16,7 +16,8 @@ export const notificationsController = {
           u.image as sender_image,
           p.image_url as post_image_url,
           p._id as post_id,
-          p.caption as post_caption
+          p.caption as post_caption,
+          p.user_id as post_user_id
         FROM notifications n
         LEFT JOIN users u ON n.sender_id = u._id
         LEFT JOIN posts p ON n.post_id = p._id
@@ -24,7 +25,6 @@ export const notificationsController = {
         ORDER BY n.created_at DESC
       `;
 
-      // Formater les données pour correspondre au type Notification
       const formattedNotifications = notifications.map(notification => ({
         _id: notification._id,
         receiver_id: notification.receiver_id,
@@ -42,7 +42,8 @@ export const notificationsController = {
         post: notification.post_id ? {
           _id: notification.post_id,
           image_url: notification.post_image_url,
-          caption: notification.post_caption
+          caption: notification.post_caption,
+          user_id: notification.post_user_id
         } : null
       }));
 
