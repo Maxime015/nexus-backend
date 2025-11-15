@@ -1,12 +1,12 @@
 // index.js
 import express from 'express';
-import { usersController } from '../controllers/usersController.js';
-import { postsController } from '../controllers/postsController.js';
-import { commentsController } from '../controllers/commentsController.js';
 import { bookmarksController } from '../controllers/bookmarksController.js';
+import { commentsController } from '../controllers/commentsController.js';
 import { notificationsController } from '../controllers/notificationsController.js';
+import { postsController } from '../controllers/postsController.js';
+import { usersController } from '../controllers/usersController.js';
 import { requireAuth } from '../middlewares/auth.js';
-import upload from '../middlewares/upload.middleware.js'; 
+import upload from '../middlewares/upload.middleware.js';
 
 const router = express.Router();
 
@@ -35,5 +35,6 @@ router.get('/bookmarks', requireAuth, bookmarksController.getBookmarkedPosts);
 
 // Routes notifications
 router.get('/notifications', requireAuth, notificationsController.getNotifications);
+router.delete('/notifications/:notificationId', requireAuth, notificationsController.deleteNotification);
 
 export default router;
