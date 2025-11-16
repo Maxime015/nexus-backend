@@ -2,7 +2,6 @@
 import sql from '../config/db.js';
 import { getAuthenticatedUser } from '../middlewares/auth.js';
 
-// controllers/notificationsController.js
 export const notificationsController = {
   getNotifications: async (req, res) => {
     try {
@@ -18,11 +17,11 @@ export const notificationsController = {
           p._id as post_id,
           p.caption as post_caption,
           p.user_id as post_user_id,
-          c.content as comment_content // Ajout du contenu du commentaire
+          c.content as comment_content
         FROM notifications n
         LEFT JOIN users u ON n.sender_id = u._id
         LEFT JOIN posts p ON n.post_id = p._id
-        LEFT JOIN comments c ON n.comment_id = c._id // Jointure avec la table comments
+        LEFT JOIN comments c ON n.comment_id = c._id
         WHERE n.receiver_id = ${user._id}
         ORDER BY n.created_at DESC
       `;
@@ -47,7 +46,6 @@ export const notificationsController = {
           caption: notification.post_caption,
           user_id: notification.post_user_id
         } : null,
-        // Ajout du commentaire
         comment: notification.comment_content ? {
           content: notification.comment_content
         } : null
