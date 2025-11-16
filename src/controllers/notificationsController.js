@@ -17,10 +17,12 @@ export const notificationsController = {
           p.image_url as post_image_url,
           p._id as post_id,
           p.caption as post_caption,
-          p.user_id as post_user_id
+          p.user_id as post_user_id,
+          c.content as comment_content // Ajout du contenu du commentaire
         FROM notifications n
         LEFT JOIN users u ON n.sender_id = u._id
         LEFT JOIN posts p ON n.post_id = p._id
+        LEFT JOIN comments c ON n.comment_id = c._id // Jointure avec la table comments
         WHERE n.receiver_id = ${user._id}
         ORDER BY n.created_at DESC
       `;
@@ -44,6 +46,10 @@ export const notificationsController = {
           image_url: notification.post_image_url,
           caption: notification.post_caption,
           user_id: notification.post_user_id
+        } : null,
+        // Ajout du commentaire
+        comment: notification.comment_content ? {
+          content: notification.comment_content
         } : null
       }));
 
